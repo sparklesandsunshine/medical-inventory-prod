@@ -3,7 +3,7 @@ A Django-based web app for tracking medical equipment utilization across hospita
 
 ## Features
 - **Dashboard** View equipment with daily cost breakdown by floor
-- **Histoical Data Tab** Analyzes past equipment usage with filtering
+- **Historical Data Tab** Analyzes past equipment usage with filtering
 - Date range filters
 - Floor/equipment type filters
 - Ownership filters (rented/owned)
@@ -11,11 +11,11 @@ A Django-based web app for tracking medical equipment utilization across hospita
 - Interactive chart
 - Floor Segment tracking for patients that move between floors
 - CSV export option
-- Responsvie design
+- Responsive design
 
 ## Stack
 -  **Backend**: Django 5.2.9
-- **Frontend**: Boostrap 5, chart.js
+- **Frontend**: Bootstrap 5, chart.js
 - **SQLite**: (development)
 
 ## Installation
@@ -58,7 +58,7 @@ med-portfolio-prod/
 - Advanced analytics and reporting
 
 ## License
-This project is for educatoinal purposes.
+This project is for educational purposes.
 
 
 
