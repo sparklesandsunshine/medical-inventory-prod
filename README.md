@@ -1,6 +1,20 @@
 # Medical Equipment Inventory Tracker
 A Django-based web app for tracking medical equipment utilization across hospital floors.
 
+## Screenshots
+
+### Active Dashboard
+![Active Dashboard](screenshots/active%20dashboard.png)
+
+### Historical Data Dashboard
+![Historical Dashboard](screenshots/Historical%20dashboard.png)
+
+### Historical Data Table with Filters
+![Historical Table](screenshots/Historical%20Table.png)
+
+### Add Equipment Form
+![Add Equipment Form](screenshots/add%20equipment%20form.png)
+
 ## Features
 - **Dashboard** View equipment with daily cost breakdown by floor
 - **Historical Data Tab** Analyzes past equipment usage with filtering
