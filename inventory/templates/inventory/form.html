@@ -1,0 +1,89 @@
+{% extends 'inventory/base.html' %}
+<!--form to log equipment-->
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Log Equipment</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <!--security token required for POST requests-->
+                        {% csrf_token %} 
+                    
+                        <!--equip details-->
+                        <h5 class="mb-3">Equipment Details</h5>
+                        {{ form.as_p }}
+
+                        <!--floor segments-->
+                        {% if formset %}
+                        <hr class="my-4">
+                        <h5 class="mb-3">Floor Segments</h5>
+                        <p class="text-muted small">Track when the equipment is transferred between floors.
+                            {% if record %}
+                                <strong>Valid Date Range: {{ record.start_date }} - {{ record.end_date|default:"Present" }}</strong>
+                        
+                            {% endif %}
+                        </p>
+
+                        {{ formset.management_form }}
+                    
+                        <!--floor segments form fields-->
+                        <div id="floor-segments">
+                            {% for segment_form in formset %}
+                            <div class="card mb-3 border-secondary">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                                {{ segment_form.floor.label_tag }}
+                                            {{ segment_form.floor }}
+                                            {% if segment_form.floor.errors %}
+                                                <div class="text-danger small">
+                                                    {{ segment_form.floor.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {{ segment_form.start_date.label_tag }}
+                                            {{ segment_form.start_date }}
+                                            {% if segment_form.start_date.errors %}
+                                                <div class="text-danger small">
+                                                    {{ segment_form.start_date.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {{ segment_form.end_date.label_tag }}
+                                            {{ segment_form.end_date }}
+                                            {% if segment_form.end_date.errors %}
+                                                <div class="text-danger small">
+                                                    {{ segment_form.end_date.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            {% if segment_form.instance.pk %}
+                                                {{ segment_form.DELETE }}
+                                                <label for= "{{ segment_form.DELETE.id_for_label }}" class="ms-2">Delete</label>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {{ segment_form.id }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Save Record</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

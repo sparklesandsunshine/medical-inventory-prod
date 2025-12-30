@@ -1,0 +1,206 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Historical Data</h2>
+    </div>
+
+    <!-- summary cards -->
+     <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-primary mb-3 shadow">
+                <div class="card-header">Total Historical Records</div>
+                <div class="card-body">
+                <h2 class="card-title">{{ total_records }}</h2>
+                <p class="card-text">Completed Equipment Utilizations</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-info mb-3 shadow">
+                <div class="card-header">Total Historical Cost</div>
+                <div class="card-body">
+                <h2 class="card-title">${{ total_history_cost|floatformat:2 }}</h2>
+                <p class="card-text">Total cost of past equipment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- chart -->
+    <div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Historical Cost Breakdown by Floor</h5>
+        <canvas id="historyChart" style="max-height: 300px;"></canvas>
+    </div>
+    </div>
+
+
+    <!-- date range filter -->
+    <div class="mb-3">
+    <form method="get" class="d-flex align-items-end gap-2">
+        <div>
+            <label class="form-label small">From:</label>
+            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+        <div>
+            <label class="form-label small">To:</label>
+            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{% url 'history' %}" class="btn btn-outline-secondary">Clear</a>
+    </form>
+    </div>
+
+
+    <!-- filters -->
+        <div class="mb-3">
+            <!-- floor filter -->
+        <span class="me-2">Filter By Floor:</span>
+        <a href="{% url 'history' %}"
+        class="btn btn-sm {% if not current_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+        All
+        </a>
+        {% for floor in all_floors %}
+            <a href="?floor={{ floor.name }}"
+            class="btn btn-sm {% if current_filter == floor.name %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ floor.name }}
+            </a>
+        {% endfor %}
+        </div>
+
+        <!-- equipment filter-->
+        <div class="mb-4">
+        <span class="me-2">Filter By Equipment Type:</span>
+        <a href="{% url 'history' %}"
+            class="btn btn-sm {% if not current_equipment_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            All
+        </a>
+        {% for equipment in all_equipment %}
+            <a href="?equipment={{ equipment.name }}"
+            class="btn btn-sm {% if current_equipment_filter == equipment.name %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            {{ equipment.name }}
+            </a>
+        {% endfor %}
+        </div>
+
+        <!-- ownership filter--> 
+        <div class="mb-5">
+            <span class="me-2">Filter By Ownership Type:</span>
+        <a href="{% url 'history' %}"
+            class="btn btn-sm {% if not ownership_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            All
+        </a>
+        <a href="?ownership=RENTAL"
+            class="btn btn-sm {% if ownership_filter == 'RENTAL' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+            Rental
+        </a>
+        <a href="?ownership=OWNED"
+            class="btn btn-sm {% if ownership_filter == 'OWNED' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+            Owned
+        </a>
+        </div>
+
+        <!-- sort -->
+        <div class="mb-4">
+            <span class="me-2">Sort By:</span>
+            <select class="form-select form-select-sm d-inline-block w-auto" onchange="window.location.href='?sort=' + this.value">
+                <option value="-end_date" {% if sort_by == '-end_date' %}selected{% endif %}>Newest First</option>
+                <option value="end_date" {% if sort_by == 'end_date' %}selected{% endif %}>Oldest First</option>
+                <option value="equipment_type__name" {% if sort_by == 'equipment_type__name' %}selected{% endif %}>Equipment A-Z</option>
+                <option value="-equipment_type__name" {% if sort_by == '-equipment_type__name' %}selected{% endif %}>Equipment Z-A</option>
+                <option value="-total_cost" {% if sort_by == '-total_cost' %}selected{% endif %}>Highest Total Cost</option>
+                <option value="total_cost" {% if sort_by == 'total_cost' %}selected{% endif %}>Lowest Total Cost</option>
+            </select>
+        </div>
+
+    <!-- history records table -->
+     <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Equipment</th>
+                        <th>Floor</th>
+                        <th>Type</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Total Days</th>
+                        <th>Total Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in all_records %}
+                    <tr>
+                        <td><strong>{{ record.equipment_type.name }}</strong></td>
+                        <td>{{ record.floor.name }}</td>
+                        <td>
+                            {% if record.ownership_type == 'RENTAL' %}
+                            <span class="badge bg-warning text-dark">Rental</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Owned</span>
+                            {% endif %} 
+                        </td>
+                        <td>{{ record.start_date }}</td>
+                        <td>{{ record.end_date }}</td>
+                        <td>{{ record.total_days }}</td>
+                        <td>${{ record.total_cost|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+     <script>
+        // get data
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+
+        // create chart
+        const ctx = document.getElementById('historyChart').getContext('2d');
+        const historyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Historical Cost ($)',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                    }]
+            },
+           options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Total Cost: $' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Current Utilization</h2>
+        <div>
+            <!--export to csv & log equip buttons-->
+            <a href="{% url 'export_csv' %}" class="btn btn-outline-secondary me-2">Export to CSV</a>
+        <a href="{% url 'add_utilization' %}" class="btn btn-success">Log New Equipment</a>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <!-- burn rate card -->
+            <div class="card text-white bg-success mb-3 shadow">
+                <div class="card-header">Daily Owned Equipment Cost</div>
+                <div class="card-body">
+                    <h2 class="card-title">${{ owned_daily_cost|floatformat:2 }}</h2>
+                    <p class="card-text">Active savings for owned equipment.</p>
+                </div>
+            </div>
+            <!-- rental expenses card -->
+            <div class="card text-dark bg-info mb-3 shadow">
+                <div class="card-header">Daily Rental Equipment Cost</div>
+                <div class="card-body">
+                    <h2 class="card-title">${{ rental_daily_cost|floatformat:2 }}</h2>
+                    <p class="card-text">Active cost for rented equipment.</p>
+                </div>
+            </div>
+            <!-- efficiency score card -->
+            <div class="card text-white bg-secondary mb-3 shadow">
+                <div class="card-header">Efficiency Score</div>
+                <div class="card-body">
+                    <h2 class="card-title">{{ efficiency_score|floatformat:0 }}%</h2>
+                    <p class="card-text">Percentage of owned equipment.</p>
+                    <!-- efficiency progress bar -->
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-dark"
+                        role="progressbar"
+                        style="width: {{ efficiency_score }}%;"
+                        aria-valuenow="{{ efficiency_score }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+        <div class="col-md-8">
+        <div class="card shadow h-100">
+            <!-- dynamic chart title -->
+            <div class="card-header">{{ chart_title }}</div>
+            <div class="card-body">
+                <!-- chart -->
+                <canvas id="costChart"></canvas>
+            </div>
+        </div>
+    </div></div>
+    
+    <div class="mb-3">
+        <!-- filter by floor-->
+        <span class="me-2">Filter by Floor:</span>
+        <a href="{% url 'dashboard' %}" 
+           class="btn btn-sm {% if not current_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+           All
+        </a>
+
+        {% for floor in all_floors %}
+            <a href="?floor={{ floor.name }}" 
+               class="btn btn-sm {% if current_filter == floor.name %}btn-primary{% else %}btn-outline-primary{% endif %}">
+               {{ floor.name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- filter by equipment type-->
+    <div class="mb-4">
+        <span class="me-2">Filter by Equipment Type:</span>
+        <a href="{% url 'dashboard' %}" 
+        class="btn btn-sm {% if not current_equipment_filter %}btn-dark{% else %}btn-outline-dark{% endif %}">
+        All
+        </a>
+        {% for equipment in all_equipment %}
+            <a href="?equipment={{ equipment.name }}" 
+               class="btn btn-sm {% if current_equipment_filter == equipment.name %}btn-success{% else %}btn-outline-success{% endif %}">
+               {{ equipment.name }}
+            </a>
+        {% endfor %}
+    </div>
+
+<!-- equipment table to display all info, including update/delete functions-->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Equipment</th>
+                        <th>Floor</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Daily Cost</th>
+                        <th>Total Days</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in all_records %}
+                    <tr>
+                        <td><strong>{{ record.equipment_type.name }}</strong></td>
+                        <td>{{ record.floor.name }}
+                            {% if record.segments.exists %}
+                                <span class="badge bg-info ms-1" title="This equipment has been moved between floors">
+                                    <!--i.e ↔ 1 move, ↔ 2 moves-->
+                                    ↔ {{ record.segments.count }} move{{ record.segments.count|pluralize }}
+                                </span>
+                            {% endif %}
+                        </td> 
+                        <td>
+                            <!--rental.owned badges-->
+                            {% if record.ownership_type == 'RENTAL' %}
+                                <span class="badge bg-warning text-dark">Rental</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Owned</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <!--active.inactive badges-->
+                            {% if record.end_date %}<span class="badge bg-danger">Inactive</span>
+                            {% else %}<span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>${{ record.daily_cost }}</td>
+                        <td>{{ record.total_days }}</td>
+                        <td>
+                            <!--update/delete buttons-->
+                            <a href="{% url 'update_utilization' record.id %}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="{% url 'delete_utilization' record.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- chart.js script for the daily cost breakdown chart by floor -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const labels = {{ chart_labels|safe }};
+    const data = {{ chart_data|safe }};
+
+    const ctx = document.getElementById('costChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels, //x axis
+            datasets: [{
+                label: 'Daily Cost ($)',
+                data: data, //y axis
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return '$' + value; }
+                    }
+                }
+            }
+        }
+    });
+    </script>
+{% endblock %}
